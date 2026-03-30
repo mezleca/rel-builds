@@ -12,27 +12,22 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
-      - name: setup msys2
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          install: >-
-            base-devel
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-nasm
-            perl
+      - name: install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential perl curl mingw-w64
 
       - name: build openssl
-        shell: msys2 {0}
+        shell: bash
         run: |
           set -euo pipefail
           version="${{ inputs.version }}"
           curl -L -o openssl.tar.gz "https://www.openssl.org/source/openssl-${version}.tar.gz"
           tar -xzf openssl.tar.gz
           cd "openssl-${version}"
-          ./Configure mingw64 no-shared no-tests --prefix="$PWD/install"
+          ./Configure mingw64 --cross-compile-prefix=x86_64-w64-mingw32- no-shared no-tests --prefix="$PWD/install"
           make -j2
           make install_sw
           cd install
