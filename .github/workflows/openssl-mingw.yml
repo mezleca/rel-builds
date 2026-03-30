@@ -6,6 +6,10 @@ on:
         description: "OpenSSL version"
         required: true
         default: "3.3.1"
+      tag_suffix:
+        description: "Release tag suffix"
+        required: true
+        default: "-1"
 
 permissions:
   contents: write
@@ -37,8 +41,8 @@ jobs:
       - name: upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: openssl-mingw-${{ inputs.version }}
-          name: openssl-mingw-${{ inputs.version }}
+          tag_name: openssl-mingw-${{ inputs.version }}${{ inputs.tag_suffix }}
+          name: openssl-mingw-${{ inputs.version }}${{ inputs.tag_suffix }}
           files: openssl-${{ inputs.version }}-x64-windows-mingw-static.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
