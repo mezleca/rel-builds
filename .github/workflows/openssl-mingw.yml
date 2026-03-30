@@ -1,0 +1,45 @@
+name: build-openssl-mingw
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "OpenSSL version"
+        required: true
+        default: "3.3.1"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: setup msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-nasm
+            perl
+
+      - name: build openssl
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          curl -L -o openssl.tar.gz "https://www.openssl.org/source/openssl-${version}.tar.gz"
+          tar -xzf openssl.tar.gz
+          cd "openssl-${version}"
+          ./Configure mingw64 no-shared no-tests --prefix="$PWD/install"
+          make -j2
+          make install_sw
+          cd install
+          tar -czf "../openssl-${version}-x64-windows-mingw-static.tar.gz" .
+
+      - name: upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: openssl-mingw-${{ inputs.version }}
+          name: openssl-mingw-${{ inputs.version }}
+          files: openssl-${{ inputs.version }}-x64-windows-mingw-static.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
