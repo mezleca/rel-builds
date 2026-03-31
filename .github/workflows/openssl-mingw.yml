@@ -31,7 +31,7 @@ jobs:
           curl -L -o openssl.tar.gz "https://www.openssl.org/source/openssl-${version}.tar.gz"
           tar -xzf openssl.tar.gz
           cd "openssl-${version}"
-          ./Configure mingw64ucrt --cross-compile-prefix=x86_64-w64-mingw32- no-shared no-tests --prefix="$PWD/install"
+          ./Configure mingw64 --cross-compile-prefix=x86_64-w64-mingw32- no-shared no-tests --prefix="$PWD/install" -D_UCRT
           make -j2
           make install_sw
           cd install
