@@ -85,7 +85,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: realm-cpp-${{ inputs.version }}
-          name: build
+          name: realm-cpp-rel
           files: ./dist/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
