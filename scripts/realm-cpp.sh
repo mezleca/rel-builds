@@ -5,6 +5,7 @@
 
 VERSION="2.2.0"
 PLATFORM="linux"
+ARTIFACT_FLAVOR=""
 
 cd_or_create() {
     if [ ! -d "$1" ]; then
@@ -21,6 +22,9 @@ for arg in "$@"; do
         --version=*)
             VERSION="${arg#*=}"
             ;;
+        --artifact-flavor=*)
+            ARTIFACT_FLAVOR="${arg#*=}"
+            ;;
     esac
 done
 
@@ -34,8 +38,12 @@ REALM_INSTALL_DIR="$CUR/install"
 CMAKE_EXTRA_FLAGS=""
 
 if [[ "$PLATFORM" == "windows" ]]; then
+    if [[ -z "$ARTIFACT_FLAVOR" ]]; then
+        ARTIFACT_FLAVOR="static"
+    fi
     CMAKE_EXTRA_FLAGS="
         -DREALM_USE_SYSTEM_OPENSSL=ON
+        -DBUILD_SHARED_LIBS=OFF
         -DOPENSSL_ROOT_DIR=/mingw64
         -DOPENSSL_CRYPTO_LIBRARY=/mingw64/lib/libcrypto.a
         -DOPENSSL_SSL_LIBRARY=/mingw64/lib/libssl.a
@@ -50,11 +58,14 @@ fi
 if [[ "$PLATFORM" == "windows" ]]; then
     CXX_COMPILER="x86_64-w64-mingw32-g++"
     C_COMPILER="x86_64-w64-mingw32-gcc"
-    TAR_TARGET="$CUR/realm-cpp-$VERSION-x64-windows-mingw-shared.tar.gz"
+    TAR_TARGET="$CUR/realm-cpp-$VERSION-x64-windows-mingw-$ARTIFACT_FLAVOR.tar.gz"
 else
+    if [[ -z "$ARTIFACT_FLAVOR" ]]; then
+        ARTIFACT_FLAVOR="shared"
+    fi
     CXX_COMPILER="clang++"
     C_COMPILER="clang"
-    TAR_TARGET="$CUR/realm-cpp-$VERSION-x64-linux-clang-shared.tar.gz"
+    TAR_TARGET="$CUR/realm-cpp-$VERSION-x64-linux-clang-$ARTIFACT_FLAVOR.tar.gz"
 fi
 
 # clone / initialize forked repo
