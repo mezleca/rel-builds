@@ -15,6 +15,9 @@ for arg in "$@"; do
         --platform=*)
             PLATFORM="${arg#*=}"
             ;;
+        --version=*)
+            VERSION="${arg#*=}"
+            ;;
     esac
 done
 
