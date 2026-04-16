@@ -26,9 +26,16 @@ done
 
 # configure
 CUR=$(pwd)
+
 REALM_DIR="$CUR/realm-cpp"
 REALM_BUILD_DIR="$REALM_DIR/build"
 REALM_INSTALL_DIR="$CUR/install"
+
+CMAKE_EXTRA_FLAGS=""
+
+if [[ "$PLATFORM" == "windows" ]]; then
+    CMAKE_EXTRA_FLAGS="-DOPENSSL_ROOT_DIR=/mingw64"
+fi
 
 if [[ "$PLATFORM" == "windows" ]]; then
     CXX_COMPILER="x86_64-w64-mingw32-g++"
@@ -59,7 +66,8 @@ cd "$REALM_DIR" && cmake -S . -B build -G Ninja \
     -DCMAKE_CXX_STANDARD=17 \
     -DCMAKE_INSTALL_PREFIX="$REALM_INSTALL_DIR" \
     -DREALM_NO_TESTS=ON \
-    -DREALM_CPP_NO_TESTS=ON || exit 1
-
+    -DREALM_CPP_NO_TESTS=ON \
+    $CMAKE_EXTRA_FLAGS || exit 1
+ 
 cd_or_create "$REALM_BUILD_DIR" && ninja -j 4 && ninja install
 cd_or_create "$CUR" && tar -czf "$TAR_TARGET" -C "$REALM_INSTALL_DIR" .
