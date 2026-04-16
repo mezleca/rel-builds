@@ -34,7 +34,17 @@ REALM_INSTALL_DIR="$CUR/install"
 CMAKE_EXTRA_FLAGS=""
 
 if [[ "$PLATFORM" == "windows" ]]; then
-    CMAKE_EXTRA_FLAGS="-DOPENSSL_ROOT_DIR=/mingw64"
+    CMAKE_EXTRA_FLAGS="
+        -DREALM_USE_SYSTEM_OPENSSL=ON
+        -DOPENSSL_ROOT_DIR=/mingw64
+        -DOPENSSL_CRYPTO_LIBRARY=/mingw64/lib/libcrypto.a
+        -DOPENSSL_SSL_LIBRARY=/mingw64/lib/libssl.a
+        -DOPENSSL_INCLUDE_DIR=/mingw64/include
+        -DZLIB_LIBRARY=/mingw64/lib/libz.a
+        -DZLIB_LIBRARY_RELEASE=/mingw64/lib/libz.a
+        -DZLIB_LIBRARY_DEBUG=/mingw64/lib/libz.a
+        -DZLIB_INCLUDE_DIR=/mingw64/include
+    "
 fi
 
 if [[ "$PLATFORM" == "windows" ]]; then
