@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# TOFIX: actually use the version
+# TODO: custom toolchain (maybe)
+
 VERSION="2.2.0"
 PLATFORM="linux"
 
