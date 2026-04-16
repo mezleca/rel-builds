@@ -1,0 +1,58 @@
+name: build realm-cpp-fork
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: fix line endings
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: git config --global core.autocrlf input
+
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: setup msys2
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+
+      - name: setup linux deps
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build
+
+      - name: build (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: bash ./scripts/realm-cpp.sh --platform=linux
+
+      - name: build (windows)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: bash ./scripts/realm-cpp.sh --platform=windows
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: realm-cpp-${{ matrix.os }}
+          path: realm-cpp-*.tar.gz
