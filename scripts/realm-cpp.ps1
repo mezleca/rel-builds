@@ -43,13 +43,21 @@ if ($Toolchain -eq "mingw") {
     $CxxCompiler = "cl"
     $CCompiler   = "cl"
 
-    $VcVars = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat"
-    if (-not (Test-Path $VcVars)) {
+    $VcVarsCandidates = @(
+        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat",
+        "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat",
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat"
+    )
+
+    $VcVars = $VcVarsCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+    if (-not $VcVars) {
         Write-Error "vcvarsall.bat not found."
         exit 1
     }
 
     $EnvDump = cmd /c "`"$VcVars`" x64 > nul 2>&1 && set"
+
     foreach ($line in $EnvDump) {
         if ($line -match "^([^=]+)=(.*)$") {
             [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
