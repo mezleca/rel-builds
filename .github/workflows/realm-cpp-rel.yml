@@ -1,5 +1,4 @@
-name: build realm-cpp-fork
-
+name: build-realm-cpp
 on:
   workflow_dispatch:
     inputs:
@@ -7,85 +6,108 @@ on:
         description: "version tag"
         required: false
         default: "2.2.0"
+      rc:
+        description: "rc"
+        required: false
+        default: ""
+      target:
+        description: "build target"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - linux
+          - mingw
+          - msvc
+          - all
 
 permissions:
   contents: write
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+  build-linux:
+    if: inputs.target == 'linux' || inputs.target == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install deps
+        run: sudo apt-get update -y && sudo apt-get install -y clang cmake ninja-build
+      - name: build
+        run: bash ./scripts/realm-cpp.sh --version=${{ inputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: realm-linux
+          path: packages/*.tar.gz
 
+  build-mingw:
+    if: inputs.target == 'mingw' || inputs.target == 'all'
+    runs-on: windows-latest
     steps:
       - name: fix line endings
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
         run: git config --global core.autocrlf input
-
-      - name: checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
-      - name: setup msys2
-        if: matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
+        shell: pwsh
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
           install: >-
-            git
             mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-openssl
             mingw-w64-x86_64-zlib
             mingw-w64-x86_64-ninja
-
-      - name: setup linux deps
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y clang cmake ninja-build
-
-      - name: build (linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: bash ./scripts/realm-cpp.sh --platform=linux --version=${{ inputs.version }} --artifact-flavor=shared
-
-      - name: build (windows)
-        if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
-        run: bash ./scripts/realm-cpp.sh --platform=windows --version=${{ inputs.version }} --artifact-flavor=static
-
-      - name: upload artifact
-        uses: actions/upload-artifact@v4
+      - name: build
+        shell: pwsh
+        run: .\scripts\realm-cpp.ps1 -Toolchain mingw -Version ${{ inputs.version }}
+      - uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.os }}
-          path: ./*.tar.gz
+          name: realm-mingw
+          path: packages/*.tar.gz
+
+  build-msvc:
+    if: inputs.target == 'msvc' || inputs.target == 'all'
+    runs-on: windows-latest
+    steps:
+      - name: fix line endings
+        run: git config --global core.autocrlf input
+        shell: pwsh
+      - uses: actions/checkout@v4
+      - name: build
+        shell: pwsh
+        run: .\scripts\realm-cpp.ps1 -Toolchain msvc -Version ${{ inputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: realm-msvc
+          path: packages/*.tar.gz
 
   publish:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build-linux, build-mingw, build-msvc]
+    if: always() && !failure() && !cancelled()
     steps:
       - name: download linux artifact
+        if: needs.build-linux.result == 'success'
         uses: actions/download-artifact@v4
         with:
-          name: build-ubuntu-latest
-          path: ./dist
-
-      - name: download windows artifact
+          name: realm-linux
+          path: dist
+      - name: download mingw artifact
+        if: needs.build-mingw.result == 'success'
         uses: actions/download-artifact@v4
         with:
-          name: build-windows-latest
-          path: ./dist
-
-      - name: upload release asset
-        uses: softprops/action-gh-release@v3
+          name: realm-mingw
+          path: dist
+      - name: download msvc artifact
+        if: needs.build-msvc.result == 'success'
+        uses: actions/download-artifact@v4
         with:
-          tag_name: realm-cpp-${{ inputs.version }}
-          name: realm-cpp-rel
-          files: ./dist/*.tar.gz
+          name: realm-msvc
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: realm-cpp-${{ inputs.version }}${{ inputs.rc != '' && format('-{0}', inputs.rc) || '' }}
+          name: realm-cpp-${{ inputs.version }}${{ inputs.rc != '' && format('-{0}', inputs.rc) || '' }}
+          files: dist/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

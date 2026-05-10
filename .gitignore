@@ -1,2 +1,2 @@
-scripts/*
-!scripts/*.sh
+/tmp
+/packages

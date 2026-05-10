@@ -1,0 +1,84 @@
+name: build-openssl
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "OpenSSL version"
+        required: true
+        default: "3.3.1"
+      rc:
+        description: "rc"
+        required: false
+        default: ""
+      tag_suffix:
+        description: "release tag suffix"
+        required: true
+        default: "-1"
+      target:
+        description: "build target"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - mingw
+          - msvc
+          - both
+
+permissions:
+  contents: write
+
+jobs:
+  build-mingw:
+    if: inputs.target == 'mingw' || inputs.target == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential perl curl mingw-w64
+      - name: build
+        run: bash ./scripts/openssl-mingw.sh --version=${{ inputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openssl-mingw
+          path: packages/*.tar.gz
+
+  build-msvc:
+    if: inputs.target == 'msvc' || inputs.target == 'both'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install deps
+        run: choco install nasm strawberryperl -y
+        shell: pwsh
+      - name: build
+        shell: pwsh
+        run: .\scripts\openssl-msvc.ps1 -Version ${{ inputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openssl-msvc
+          path: packages/*.tar.gz
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build-mingw, build-msvc]
+    if: always() && !failure() && !cancelled()
+    steps:
+      - name: download mingw artifact
+        if: needs.build-mingw.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: openssl-mingw
+          path: dist
+      - name: download msvc artifact
+        if: needs.build-msvc.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: openssl-msvc
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: openssl-${{ inputs.version }}${{ inputs.rc != '' && format('-{0}', inputs.rc) || '' }}${{ inputs.tag_suffix }}
+          name: openssl-${{ inputs.version }}${{ inputs.rc != '' && format('-{0}', inputs.rc) || '' }}${{ inputs.tag_suffix }}
+          files: dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
