@@ -65,7 +65,6 @@ if ($Toolchain -eq "mingw") {
     }
 
     $ExtraFlags = @(
-        "-DREALM_USE_SYSTEM_OPENSSL=ON",
         "-DBUILD_SHARED_LIBS=OFF"
     )
 }
