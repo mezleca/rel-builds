@@ -33,7 +33,9 @@ jobs:
       - name: install deps
         run: sudo apt-get update -y && sudo apt-get install -y clang cmake ninja-build
       - name: build
-        run: bash ./scripts/realm-cpp.sh --version=${{ inputs.version }}
+        run: |
+          bash ./scripts/realm-cpp.sh --version=${{ inputs.version }} --build-variant=linux-clang
+          bash ./scripts/realm-cpp.sh --version=${{ inputs.version }} --build-variant=linux-clang-fpic
       - uses: actions/upload-artifact@v4
         with:
           name: realm-linux
