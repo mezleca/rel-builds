@@ -17,7 +17,7 @@ on:
         type: choice
         options:
           - linux
-          - mingw
+          # - mingw
           - msvc
           - all
 
@@ -83,7 +83,8 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-mingw, build-msvc]
+    needs: [build-linux, build-msvc]
+    # needs: [build-linux, build-mingw, build-msvc]
     if: always() && !failure() && !cancelled()
     steps:
       - name: download linux artifact
