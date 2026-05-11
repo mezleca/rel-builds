@@ -22,8 +22,8 @@ if ($Toolchain -eq "mingw") {
     $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
 
     $TarTarget   = "$PackagesDir\realm-cpp-$Version-x64-windows-mingw-$ArtifactFlavor.tar.gz"
-    $CxxCompiler = "C:/msys64/mingw64/bin/x86_64-w64-mingw32-g++.exe"
-    $CCompiler   = "C:/msys64/mingw64/bin/x86_64-w64-mingw32-gcc.exe"
+    $CxxCompiler = "C:/msys64/mingw64/bin/g++.exe"
+    $CCompiler   = "C:/msys64/mingw64/bin/gcc.exe"
 
     $ExtraFlags = @(
         "-DREALM_USE_SYSTEM_OPENSSL=ON",
