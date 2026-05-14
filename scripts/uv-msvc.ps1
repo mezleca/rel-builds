@@ -56,7 +56,7 @@ if (-not (Test-Path $SrcDir)) {
 
 Set-Location $SrcDir
 
-cmake -B build -S . -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX="$InstallDir"
+cmake -B build -S . -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX="$InstallDir" -DBUILD_SHARED_LIBS=OFF
 if ($LASTEXITCODE -ne 0) { Write-Error "Configure failed"; exit 1 }
 
 cmake --build build --config Release
